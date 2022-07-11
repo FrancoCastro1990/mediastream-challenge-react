@@ -14,49 +14,26 @@
 
 import "./assets/styles.css";
 import { useEffect, useState } from "react";
+import { useMovie } from "./hooks/useMovie";
+import { useGenre } from "./hooks/useGenre";
 import background from "./assets/mountains.jpeg";
+import { MovieActions } from "./components/MovieActions";
+import { MovieList } from "./components/MovieList";
 
 export default function Exercise02() {
-  const [movies, setMovies] = useState([])
-  const [filterMovies, setFilterMovies] = useState([])
 
-  const [fetchCount, setFetchCount] = useState(0)
+
   const [loading, setLoading] = useState(false)
-  const [genres, setGenres] = useState([]);
 
-  const handleMovieFetch = () => {
-    setLoading(true)
-    setFetchCount(fetchCount + 1)
-    console.log('Getting movies')
-    fetch('http://localhost:3001/movies?_limit=50')
-      .then(res => res.json())
-      .then(json => {
-        setMovies(json)
-        setFilterMovies(json)
-        setLoading(false)
-      })
-      .catch(() => {
-        console.log('Run yarn movie-api for fake api')
-      })
-  }
 
-  const handleMovieFilterFetch = () => {
-    setLoading(true)
-    setFetchCount(fetchCount + 1)
-    console.log('Getting movies')
-    fetch('http://localhost:3001/genres')
-      .then(res => res.json())
-      .then(json => {
-        setGenres(json)
-        setLoading(false)
-      }).catch(() => {
-        console.log('Run yarn movie-api for fake api')
-      })
-  }
+  const { movies, handleMovieFetch, filterMoviesByGenre, orderMoviesByYears } = useMovie()
+  const { genres, handleMovieFilterFetch } = useGenre();
+
 
   useEffect(() => {
-    handleMovieFetch()
-    handleMovieFilterFetch()
+    setLoading(true)
+    handleMovieFetch().finally(() => setLoading(false))
+    handleMovieFilterFetch().finally(() => setLoading(false))
   }, [])
 
 
@@ -66,51 +43,22 @@ export default function Exercise02() {
       <div
         className="movie-library__container"
       >
-
         <h1 className="movie-library__title">
           Movie Library
         </h1>
-        <div className="movie-library__actions">
-          <select name="genre" placeholder="Search by genre..."
-            onChange={(e) => {
-              const genre = e.target.value
-              if (genre === 'all') {
-                setFilterMovies(movies)
-              } else {
-                setFilterMovies(movies.filter(movie => movie.genres.includes(genre)))
-              }
-            }}
-          >
-            <option value="all">All</option>
-            {genres.map((genre, index) => <option key={`movie_library_list_${index}`} value={genre}>{genre}</option>)}
-          </select>
-          <button
-            onClick={() => {
-              const filterByYear = filterMovies.sort((a, b) => Number(a.year) - Number(b.year)).map(movie => movie);
-              setFilterMovies(filterByYear);
-            }}
-          >Order Descending</button>
-        </div>
+        <MovieActions
+          genres={genres}
+          onFilterMoviesByGenres={filterMoviesByGenre}
+          onFilterMoviesByYear={orderMoviesByYears}
+        />
         {loading ? (
           <div className="movie-library__loading">
             <p>Loading...</p>
-            <p>Fetched {fetchCount} times</p>
           </div>
         ) : (
-          <div className="movie-library__list">
-            {filterMovies.map(movie => (
-              <div key={`movie_library_list_${movie.id}`} className="movie-library__card">
-                <img src={movie.posterUrl} alt={movie.title} />
-                <div className="movie-library__card-backbround">
-                </div>
-                <ul>
-                  <li>{movie.title}</li>
-                  <li>{movie.genres.join(', ')}</li>
-                  <li>{movie.year}</li>
-                </ul>
-              </div>
-            ))}
-          </div>
+          <MovieList
+            movies={movies}
+          />
         )}
       </div>
     </section>
